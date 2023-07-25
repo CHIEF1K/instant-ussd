@@ -18,7 +18,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/ussd', 'USSDController@handleUSSDRequest');
-Route::post('/payment-callback', 'PaymentCallbackController@handlePaymentCallback');
-
 

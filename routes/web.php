@@ -1,6 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\USSDController;
+use App\Http\Controllers\PaymentCallbackController;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +17,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+//Route::get('/', function () {
+  //  return view('welcome');
+//});
+
+Route::post('/ussd', [USSDController::class, 'handleUSSDRequest']);
+Route::post('/payment-callback', 'PaymentCallbackController@handlePaymentCallback');
+Route::post('/payment-callback', [PaymentCallbackController::class, 'handlePaymentCallback']);

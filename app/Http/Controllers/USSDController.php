@@ -31,7 +31,7 @@ class USSDController extends Controller
                 $merchants_name = $merchant->merchants_name;
                 $app_id = $merchant->app_id;
                 $app_key = $merchant->app_key;
-
+                
                 // Build the merchant-specific menu
                 $response = array(
                     "Type" => "Response",
