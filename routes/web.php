@@ -22,5 +22,4 @@ use App\Http\Controllers\PaymentCallbackController;
 //});
 
 Route::post('/ussd', [USSDController::class, 'handleUSSDRequest']);
-Route::post('/payment-callback', 'PaymentCallbackController@handlePaymentCallback');
 Route::post('/payment-callback', [PaymentCallbackController::class, 'handlePaymentCallback']);
