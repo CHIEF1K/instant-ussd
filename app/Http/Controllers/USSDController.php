@@ -64,7 +64,7 @@ class USSDController extends Controller
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
-                        "email" => $merchant_id, 
+                        "name" => $merchant_id,
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
