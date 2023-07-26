@@ -12,7 +12,7 @@ class USSDController extends Controller
     {
         // Get the USSD request data
         $mobile = $request->Mobile;
-        $session_id = $request->SessoionId;
+        $session_id = $request->SessionId;
         $service_code = $request->ServiceCode;
         $type = $request->Type;
         $message = $request->Message;
@@ -21,10 +21,16 @@ class USSDController extends Controller
         // Initialize the response array
         $response = array();
 
+        // Debugging: Dump the USSD request data
+        dd($mobile, $session_id, $service_code, $type, $message, $operator);
+
         // Check if the USSD code is registered, display the merchant name in the menu
         $merchant = DB::table('merchants')->where('ussd_code', $service_code)->first();
-        $app_id = $merchant ? $merchant->app_id : null;
-        $app_key = $merchant ? $merchant->app_key : null;
+        $app_id = null;
+        $app_key = null;
+
+        // Debugging: Dump the result of the merchant query
+        dd($merchant);
 
         // Check the USSD request type
         if ($type === "initiation") {
@@ -34,6 +40,9 @@ class USSDController extends Controller
                 $merchants_name = $merchant->merchants_name;
                 $app_id = $merchant->app_id;
                 $app_key = $merchant->app_key;
+
+                // Debugging: Dump the values of $app_id and $app_key
+                dd($app_id, $app_key);
 
                 // Build the merchant-specific menu
                 $response = array(
@@ -75,6 +84,11 @@ class USSDController extends Controller
                         "order_desc" => "Payment",
                         "ussd_code" => $service_code // Add the USSD code to the data
                     );
+
+                    // Debugging: Dump the JSON data being sent to the API
+                    dd($json_data);
+
+                    // Rest of your code as it is...
 
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
 
