@@ -90,7 +90,10 @@ class USSDController extends Controller
                     $response_message = curl_exec($curl);
                     $err = curl_error($curl);
 
-                    curl_close($curl);
+                        \Log::info('cURL response:', [$response_message]);
+                        \Log::info('cURL error:', [$err]);
+
+                         curl_close($curl);
 
                     if ($err) {
                             \Log::error("cURL error: {$err}");
