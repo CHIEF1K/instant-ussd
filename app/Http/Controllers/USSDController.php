@@ -75,8 +75,8 @@ class USSDController extends Controller
                     $curl = curl_init();
 
                     curl_setopt_array($curl, array(
-                        //CURLOPT_URL => "https://api.interpayafrica.com/v3/interapi.svc/CreateMMPayment",
-                        CURLOPT_URL => "https://testsrv.interpayafrica.com/v7/interapi.svc/CreateMMPayment",
+                        CURLOPT_URL => "https://api.interpayafrica.com/v3/interapi.svc/CreateMMPayment",
+                        //CURLOPT_URL => "https://testsrv.interpayafrica.com/v7/interapi.svc/CreateMMPayment",
 
                         CURLOPT_RETURNTRANSFER => true,
                         CURLOPT_ENCODING => "",
