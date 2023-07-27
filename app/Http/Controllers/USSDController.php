@@ -148,6 +148,8 @@ class USSDController extends Controller
                                 $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
                             }
                         } catch(\Exception $e) {
+                             error_log($e->getMessage());
+                             error_log($e->getTraceAsString());
                             $response_message = "E2. Please Try Again Later.";
                             $response = [
                                 "Type" => "Release",
