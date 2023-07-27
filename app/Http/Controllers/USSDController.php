@@ -10,6 +10,8 @@ class USSDController extends Controller
 {
     public function handleUSSDRequest(Request $request)
     {
+        DB::connection()->enableQueryLog();
+
         $mobile = $request->Mobile;
         $session_id = $request->SessoionId;
         $service_code = $request->ServiceCode;
@@ -64,6 +66,8 @@ class USSDController extends Controller
                         "order_desc" => "Payment",
                         "ussd_code" => $service_code
                     );
+                    
+                    \Log::info('Data sent in the cURL request:', $json_data);
 
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
 
@@ -89,6 +93,7 @@ class USSDController extends Controller
                     curl_close($curl);
 
                     if ($err) {
+                            \Log::error("cURL error: {$err}");
                         $response_message = "E1. Please Try Again Later.";
 
                         $response = [
@@ -101,6 +106,9 @@ class USSDController extends Controller
                         $params = json_decode($response_message, true);
 
                         try {
+                            \Log::info("Order ID: {$order_id}");
+                             $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
+
                             $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
 
                             if ($paymentTransaction) {
@@ -146,6 +154,9 @@ class USSDController extends Controller
                                 ]);
 
                                 $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
+                                // LOG THE QUERY HERE
+                                $log = DB::getQueryLog();
+                                \Log::info('DB query log:', $log);
                             }
                         } catch(\Exception $e) {
                              $response_message = $e->getMessage();
