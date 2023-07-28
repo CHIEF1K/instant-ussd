@@ -68,7 +68,7 @@ class USSDController extends Controller
                         "ussd_code" => $service_code
                     );
                     
-                    \Log::info('Data sent in the cURL request:', $json_data);
+                   // \Log::info('Data sent in the cURL request:', $json_data);
 
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
 
@@ -93,13 +93,10 @@ class USSDController extends Controller
                     $response_message = curl_exec($curl);
                     $err = curl_error($curl);
 
-                        \Log::info('cURL response:', [$response_message]);
-                        \Log::info('cURL error:', [$err]);
-
+                     
                          curl_close($curl);
 
                     if ($err) {
-                            \Log::error("cURL error: {$err}");
                         $response_message = "E1. Please Try Again Later.";
 
                         $response = [
@@ -112,80 +109,63 @@ class USSDController extends Controller
                         $params = json_decode($response_message, true);
 
                         try {
-                            \Log::info("Order ID: {$order_id}");
-                             $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
-
+                            $paymentTransaction = DB::table('payment_transactions')
+                                ->where('order_id', $order_id)
+                                ->first();
+                        
                             if ($paymentTransaction) {
-                                $sql = "UPDATE payment_transactions 
-                                        SET status_code=?, 
-                                        amount=?, 
-                                        status_message=?, 
-                                        merchantcode=?, 
-                                        transaction_no=?, 
-                                        resource_id=?, 
-                                        transaction_type='payment', 
-                                        order_id=?, 
-                                        client_timestamp=CURRENT_TIMESTAMP 
-                                        WHERE id=?";
-
-                                DB::update($sql, [
-                                    $return->status_code,
-                                    $amount,
-                                    $return->status_message,
-                                    $return->merchantcode,
-                                    $return->transaction_no,
-                                    $mobile,
-                                    'payment',
-                                    $order_id,
-                                    $paymentTransaction->id
-                                ]);
+                                DB::table('payment_transactions')
+                                    ->where('id', $paymentTransaction->id)
+                                    ->update([
+                                        'status_code' => $return->status_code,
+                                        'amount' => $amount,
+                                        'status_message' => $return->status_message,
+                                        'merchantcode' => $return->merchantcode,
+                                        'transaction_no' => $return->transaction_no,
+                                        'resource_id' => $mobile,
+                                        'transaction_type' => 'payment',
+                                        'order_id' => $order_id,
+                                        'client_timestamp' => DB::raw('CURRENT_TIMESTAMP')
+                                    ]);
                             } else {
-                                $sql = "INSERT INTO payment_transactions 
-                                        (status_code, amount, status_message, merchantcode, transaction_no, resource_id, transaction_type, order_id, ussd_code, client_timestamp) 
-                                        VALUES 
-                                        (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
-
-                                DB::insert($sql, [
-                                    $return->status_code,
-                                    $amount,
-                                    $return->status_message,
-                                    $return->merchantcode,
-                                    $return->transaction_no,
-                                    $mobile,
-                                    'payment',
-                                    $order_id,
-                                    $service_code, // Add the USSD code to the insert statement
-                                ]);
-
-                                $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
-                                // LOG THE QUERY HERE
-                                $log = DB::getQueryLog();
-                                \Log::info('DB query log:', $log);
+                                DB::table('payment_transactions')
+                                    ->insert([
+                                        'status_code' => $return->status_code,
+                                        'amount' => $amount,
+                                        'status_message' => $return->status_message,
+                                        'merchantcode' => $return->merchantcode,
+                                        'transaction_no' => $return->transaction_no,
+                                        'resource_id' => $mobile,
+                                        'transaction_type' => 'payment',
+                                        'order_id' => $order_id,
+                                        'ussd_code' => $service_code, // Add the USSD code to the insert statement
+                                        'client_timestamp' => DB::raw('CURRENT_TIMESTAMP')
+                                    ]);
+                        
+                                $paymentTransaction = DB::table('payment_transactions')
+                                    ->where('order_id', $order_id)
+                                    ->first();
                             }
-                        } catch(\Exception $e) {
-                             $response_message = $e->getMessage();
-                             $response = [
-                                  "Type" => "Release",
-                                  "Message" => $response_message
-                              ];
-                                    return response()->json($response);
+                        } catch (\Exception $e) {
+                            $response_message = $e->getMessage();
+                            return response()->json([
+                                "Type" => "Release",
+                                "Message" => $response_message
+                            ]);
                         }
-
+                        
                         if ($return->status_code == 1) {
                             $response_message = "You will receive a payment prompt to complete your payment";
-
-                            $response = [
+                            return response()->json([
                                 "Type" => "Release",
                                 "Message" => $response_message
-                            ];
-                            return response()->json($response);
+                            ]);
                         } else {
                             $response_message = "E3. Please Try Again Later.";
-                            $response = [
+                            return response()->json([
                                 "Type" => "Release",
                                 "Message" => $response_message
-                            ];
-                            return response()->json($response);
+                            ]);
                         }
                     }
                 }
