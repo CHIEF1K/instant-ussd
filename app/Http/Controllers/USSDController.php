@@ -114,8 +114,9 @@ class USSDController extends Controller
                         try {
                             \Log::info("Order ID: {$order_id}");
                              $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
+                             $transaction_id = $payment_transaction['id'];
 
-                            $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
+
 
                             if ($paymentTransaction) {
                                 $sql = "UPDATE payment_transactions 
