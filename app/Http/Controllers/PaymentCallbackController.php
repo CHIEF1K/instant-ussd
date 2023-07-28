@@ -10,6 +10,12 @@ class PaymentCallbackController extends Controller
 {
     public function handlePaymentCallback(Request $request)
     {
+        $request->validate([
+            'order_id' => 'required',
+            'status_code' => 'required',
+            'ussd_code' => 'required',
+        ]);
+
         $order_id = $request->order_id;
         $status_code = $request->status_code;
         $ussd_code = $request->ussd_code; // Extract the USSD code from the request
@@ -46,9 +52,10 @@ class PaymentCallbackController extends Controller
                 }
             }
         }
+
+        return response('Failed', 400);
     }
     
-
 
     private function sendSMS($destination, $message) {
         // API endpoint
