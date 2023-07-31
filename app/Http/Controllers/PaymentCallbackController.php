@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log; // Include the Log facade
 
 class PaymentCallbackController extends Controller
 {
     public function handlePaymentCallback(Request $request)
     {
+        // Log the entire request
+        Log::info('Received request:', $request->all());
+
         $request->validate([
             'order_id' => 'required',
             'status_code' => 'required',
@@ -46,7 +50,7 @@ class PaymentCallbackController extends Controller
                     $successMessage = "Payment of " . $amount . " GHS made by " . $mobile . " was successful. \n" .  "Powered by Emergent  ";
                     
                     // Send the SMS to the merchant's phone number
-                    $this-> sendSMS($merchant_phone_number, $successMessage);
+                    $this->sendSMS($merchant_phone_number, $successMessage);
     
                     return response('Done');
                 }
