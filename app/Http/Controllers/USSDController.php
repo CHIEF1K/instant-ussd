@@ -10,49 +10,31 @@ class USSDController extends Controller
 {
     public function handleUSSDRequest(Request $request)
     {
-        // Get the USSD request data
         $mobile = $request->Mobile;
-        $session_id = $request->SessoionId;
+        $session_id = $request->SessionId;
         $service_code = $request->ServiceCode;
         $type = $request->Type;
         $message = $request->Message;
         $operator = $request->Operator;
 
-      //  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
-        // Initialize the response array
         $response = array();
 
-        // Check if the USSD code is registered, display the merchant name in the menu
         $merchant = DB::table('merchants')->where('ussd_code', $service_code)->first();
-        $app_id = $merchant->app_id;
-        $app_key = $merchant->app_key;
-        $merchants_name = $merchant -> merchants_name;
 
-        // Check the USSD request type
         if ($type === "initiation") {
-            // USSD initiation request
             if ($merchant) {
-                // The merchant was found for the given USSD code
                 $merchants_name = $merchant->merchants_name;
-                $app_id = $merchant->app_id;
-                $app_key = $merchant->app_key;
-
-                // Build the merchant-specific menu
                 $response = array(
                     "Type" => "Response",
                     "Message" => "Welcome to " . $merchants_name . ".\nPlease enter the amount to pay:"
                 );
             } else {
-                // USSD code is not registered
                 $response = array(
                     "Type" => "Release",
                     "Message" => "Sorry, This Merchant is not registered."
                 );
             }
         } elseif ($type === "response") {
-            // USSD response request
-
-            // Process the entered amount
             $amount = trim($message);
 
             if (!is_numeric($amount)) {
@@ -60,17 +42,16 @@ class USSDController extends Controller
             } elseif ($amount <= 0) {
                 $response_message = "Amount must be greater than zero. Please try again.";
             } else {
-                // Check if the merchant is not null before proceeding
                 if ($merchant) {
                     $app_id = $merchant->app_id;
                     $app_key = $merchant->app_key;
+                    $merchants_name = $merchant->merchants_name;
                     $order_id = Str::random(12);
 
-                    // JSON data for payment
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
-                         "name" => $merchants_name,
+                        "name" => $merchants_name,
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
@@ -85,7 +66,7 @@ class USSDController extends Controller
                     $curl = curl_init();
 
                     curl_setopt_array($curl, array(
-                        CURLOPT_URL => "https://api.interpayafrica.com/v3/interapi.svc/CreateMMPayment", // live Url
+                        CURLOPT_URL => "https://api.interpayafrica.com/v3/interapi.svc/CreateMMPayment",
                         CURLOPT_RETURNTRANSFER => true,
                         CURLOPT_ENCODING => "",
                         CURLOPT_MAXREDIRS => 10,
@@ -105,43 +86,28 @@ class USSDController extends Controller
 
                     if ($err) {
                         $response_message = "E1. Please Try Again Later.";
-
-                        $response = [
-                            "Type" => "Release",
-                            "Message" => $response_message
-                        ];
-                        return response()->json($response);
                     } else {
-                        // Process the response
                         $return = json_decode($response_message);
 
-                        // Get the transaction record from the database
-                        $paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
+                        if ($paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first()) {
+                            $transaction_id = $paymentTransaction->id;
 
-                        if ($paymentTransaction) {
-                            $sql = "UPDATE payment_transactions 
-                                    SET status_code=?, 
-                                    amount=?, 
-                                    status_message=?, 
-                                    merchantcode=?, 
-                                    transaction_no=?, 
-                                    resource_id=?, 
-                                    transaction_type='payment', 
-                                    order_id=?, 
-                                    client_timestamp=CURRENT_TIMESTAMP 
-                                    WHERE id=?";
 
-                            DB::update($sql, [
-                                $return->status_code,
-                                $amount,
-                                $return->status_message,
-                                $return->merchantcode,
-                                $return->transaction_no,
-                                $mobile,
-                                'payment',
-                                $order_id,
-                                $paymentTransaction->id
+                            DB::table('payment_transactions')
+                            ->where('id', $transaction_id)
+                            ->update([
+                                'status_code' => $return->status_code,
+                                'amount' => $amount,
+                                'status_message' => $return->status_message,
+                                'merchantcode' => $return->merchantcode,
+                                'transaction_no' => $return->transaction_no,
+                                'resource_id' => $mobile,
+                                'transaction_type' => 'payment',
+                                'order_id' => $order_id,
+                                'merchant_name'=> $merchants_name,
+                                'client_timestamp' => DB::raw('CURRENT_TIMESTAMP'),
                             ]);
+
                         } else {
                             $sql = "INSERT INTO payment_transactions 
                                     (status_code, amount, status_message, merchantcode, transaction_no, resource_id, transaction_type, order_id, merchants_name, client_timestamp) 
@@ -157,35 +123,29 @@ class USSDController extends Controller
                                 $mobile,
                                 'payment',
                                 $order_id,
-                                $merchants_name, // Add the merchant name to the insert statement
+                                $merchants_name,
                             ]);
                         }
 
+                        $paymentTransaction = DB::table('mother_merchants.payment_transactions')->where('order_id', $order_id)->first();
+
                         if ($return->status_code == 1) {
                             $response_message = "You will receive a payment prompt to complete your payment";
-
-                            $response = [
-                                "Type" => "Release",
-                                "Message" => $response_message
-                            ];
-                            return response()->json($response);
                         } else {
                             $response_message = "E3. Please Try Again Later.";
-                            $response = [
-                                "Type" => "Release",
-                                "Message" => $response_message
-                            ];
-                            return response()->json($response);
                         }
                     }
+
+                    $response = [
+                        "Type" => "Release",
+                        "Message" => $response_message
+                    ];
                 } else {
-                    // USSD code is not registered
                     $response_message = "Sorry, This Merchant is not registered.";
                 }
             }
         }
 
-        // Send the USSD response
         return response()->json($response);
     }
 }
