@@ -18,7 +18,7 @@ class PaymentCallbackController extends Controller
 
         $order_id = $request->order_id;
         $status_code = $request->status_code;
-        $merchants_name = $request->name; // Extract the merchant_name from the request
+        $merchants_name = $request->merchant_name; // Extract the merchant_name from the request
 
         if ($status_code == 1) {
             // Get the Transaction Record
