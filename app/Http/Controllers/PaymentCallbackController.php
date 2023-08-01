@@ -53,7 +53,7 @@ class PaymentCallbackController extends Controller
         ]);
 
         // Get the merchant's phone number
-        $merchant = DB::table('merchants')->where('merchant_name', $merchants_name)->first();
+        $merchant = DB::table('merchants')->where('merchants_name', $merchants_name)->first();
         if ($merchant) {
             $merchant_phone_number = $merchant->phone_number;
 
