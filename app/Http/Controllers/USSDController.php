@@ -70,7 +70,7 @@ class USSDController extends Controller
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
-                        "name" => $merchants_name,
+                       // "name" => $merchants_name,
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
@@ -78,7 +78,6 @@ class USSDController extends Controller
                         "mobile_network" => strtoupper($operator),
                         "order_id" => $order_id,
                         "order_desc" => "Payment",
-                       // "ussd_code" => $service_code // Add the USSD code to the data
                     );
 
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
@@ -145,7 +144,7 @@ class USSDController extends Controller
                             ]);
                         } else {
                             $sql = "INSERT INTO payment_transactions 
-                                    (status_code, amount, status_message, merchantcode, transaction_no, resource_id, transaction_type, order_id, merchants_name, client_timestamp) 
+                                    (status_code, amount, status_message, merchantcode, transaction_no, resource_id, transaction_type, order_id, /*merchants_name*/, client_timestamp) 
                                     VALUES 
                                     (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
 
@@ -158,7 +157,7 @@ class USSDController extends Controller
                                 $mobile,
                                 'payment',
                                 $order_id,
-                                $merchants_name, // Add the merchant name to the insert statement
+                               // $merchants_name, // Add the merchant name to the insert statement
                             ]);
                         }
 
