@@ -18,7 +18,7 @@ class PaymentCallbackController extends Controller
 
         $order_id = $request->order_id;
         $status_code = $request->status_code;
-        $merchants_name = $request->merchant_name; // Extract the merchant_name from the request
+       $merchants_name = $request->name; // Extract the merchant_name from the reques
 
         if ($status_code == 1) {
             // Get the Transaction Record
@@ -53,7 +53,7 @@ class PaymentCallbackController extends Controller
         ]);
 
         // Get the merchant's phone number
-        $merchant = DB::table('merchants')->where('name', $merchants_name)->first();
+        $merchant = DB::table('merchants')->where('merchant_name', $merchants_name)->first();
         if ($merchant) {
             $merchant_phone_number = $merchant->phone_number;
 
