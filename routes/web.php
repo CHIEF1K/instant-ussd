@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\USSDController;
-use App\Http\Controllers\PaymentCallbackController;
+//use App\Http\Controllers\USSDController;
+//use App\Http\Controllers\PaymentCallbackController;
 
 
 
@@ -21,5 +21,5 @@ use App\Http\Controllers\PaymentCallbackController;
   //  return view('welcome');
 //});
 
-Route::post('/ussd', [USSDController::class, 'handleUSSDRequest']);
-Route::post('/payment-callback', [PaymentCallbackController::class, 'handlePaymentCallback']);
+//Route::post('/ussd', [USSDController::class, 'handleUSSDRequest']);
+//Route::post('/payment-callback', [PaymentCallbackController::class, 'handlePaymentCallback']);
