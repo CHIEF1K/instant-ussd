@@ -5,11 +5,16 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+
+
 
 class USSDController extends Controller
 {
-    public function handleUSSDRequest(Request $request)
+    public function handleUSSDRequest(Request $request,$merchant_id)
     {
+        //return response()->json(['message' => 'Handling USSD request for merchant_id: ' . $merchant_id]);
+
         $mobile = $request->Mobile;
         $session_id = $request->SessionId;
         $service_code = $request->ServiceCode;
@@ -19,11 +24,18 @@ class USSDController extends Controller
 
         $response = array();
 
-        $merchant = DB::table('merchants')->where('ussd_code', $service_code)->first();
+        //$merchant = DB::table('merchants')->where('ussd_code', $service_code)->first();
+
+        // Querying merchant using both ussd_code and merchant_id
+        $merchant = DB::table('merchants')
+                     ->where('ussd_code', $service_code)
+                     ->where('merchant_id', $merchant_id)
+                     ->first();
 
         if ($type === "initiation") {
             if ($merchant) {
                 $merchants_name = $merchant->merchants_name;
+                $merchant_id = $merchant->merchant_id;
                 $response = array(
                     "Type" => "Response",
                     "Message" => "Welcome to " . $merchants_name . ".\nPlease enter the amount to pay:"
@@ -45,13 +57,14 @@ class USSDController extends Controller
                 if ($merchant) {
                     $app_id = $merchant->app_id;
                     $app_key = $merchant->app_key;
-                    $merchants_name = $merchant->merchants_name;
+                  //  $merchants_name = $merchant->merchants_name;
+                    $merchant_id = $merchant->merchant_id;
                     $order_id = Str::random(12);
 
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
-                        "name" => $merchants_name,
+                        "name" => $merchant_id,
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
@@ -88,6 +101,8 @@ class USSDController extends Controller
                         $response_message = "E1. Please Try Again Later.";
                     } else {
                         $return = json_decode($response_message);
+                        $params = json_decode($response_message, true);
+
 
                         if ($paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first()) {
                             $transaction_id = $paymentTransaction->id;
@@ -104,7 +119,7 @@ class USSDController extends Controller
                                 'resource_id' => $mobile,
                                 'transaction_type' => 'payment',
                                 'order_id' => $order_id,
-                                'merchant_name'=> $merchants_name,
+                                'merchant_name'=> $merchant_id,
                                 'client_timestamp' => DB::raw('CURRENT_TIMESTAMP'),
                             ]);
 
@@ -123,7 +138,7 @@ class USSDController extends Controller
                                 $mobile,
                                 'payment',
                                 $order_id,
-                                $merchants_name,
+                                $merchant_id,
                             ]);
                         }
 
