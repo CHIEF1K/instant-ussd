@@ -18,7 +18,7 @@ class PaymentCallbackController extends Controller
 
         $order_id = $request->order_id;
         $status_code = $request->status_code;
-       $merchants_name = $request->name; // Extract the merchant_name from the reques
+        $merchant_id = $request->name; // Extract the merchant_name from the request
 
         if ($status_code == 1) {
             // Get the Transaction Record
@@ -29,10 +29,11 @@ class PaymentCallbackController extends Controller
                 $transaction_type = $payment_transaction->transaction_type;
                 $amount = $payment_transaction->amount;
                 $mobile = $payment_transaction->resource_id;
+                $merchant_id = $payment_transaction -> merchants_name;
 
                 if ($transaction_type == "payment") {
                     // Handle successful payment
-                    $this->handleSuccessfulPayment($transaction_id, $order_id, $mobile, $amount, $merchants_name);
+                    $this->handleSuccessfulPayment($transaction_id, $order_id, $mobile, $amount, $merchant_id);
 
                     return response('Done');
                 }
@@ -42,7 +43,7 @@ class PaymentCallbackController extends Controller
         return response('Failed', 400);
     }
 
-    private function handleSuccessfulPayment($transaction_id,$order_id, $mobile, $amount, $merchants_name)
+    private function handleSuccessfulPayment($transaction_id,$order_id, $mobile, $amount, $merchant_id)
     {
         // Insert payment record
         DB::table('payments')->insert([
@@ -53,7 +54,7 @@ class PaymentCallbackController extends Controller
         ]);
 
         // Get the merchant's phone number
-        $merchant = DB::table('merchants')->where('merchants_name', $merchants_name)->first();
+        $merchant = DB::table('merchants')->where('merchant_id', $merchant_id)->first();
         if ($merchant) {
             $merchant_phone_number = $merchant->phone_number;
 
