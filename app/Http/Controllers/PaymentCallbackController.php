@@ -13,7 +13,7 @@ class PaymentCallbackController extends Controller
         $request->validate([
             'order_id' => 'required',
             'status_code' => 'required',
-            'name' => 'required'
+             'name' => 'required'
         ]);
 
         $order_id = $request->order_id;
@@ -25,18 +25,21 @@ class PaymentCallbackController extends Controller
             $payment_transaction = DB::table('payment_transactions')->where('order_id', $order_id)->first();
 
             if ($payment_transaction) {
-                $transaction_id = $payment_transaction->id; 
+                $transaction_id = $payment_transaction->id; // Retrieve the transaction_id
                 $transaction_type = $payment_transaction->transaction_type;
                 $amount = $payment_transaction->amount;
                 $mobile = $payment_transaction->resource_id;
-                $merchant_id = $payment_transaction->merchants_name;
-                $status_message = $payment_transaction->status_message;
-                $status_code = $payment_transaction->status_code;
-                $transaction_no = $payment_transaction->transaction_no;
+                $merchant_id = $payment_transaction -> merchants_name;
+                $status_message = $payment_transaction -> status_message;
+                $status_code = $payment_transaction -> status_code;
+                $transaction_no = $payment_transaction -> transaction_no;
+
+
 
                 if ($transaction_type == "payment") {
                     // Handle successful payment
-                    $this->handleSuccessfulPayment($transaction_id, $order_id, $mobile, $amount, $merchant_id, $status_code, $status_message, $transaction_no);
+                    $this->handleSuccessfulPayment($transaction_id, $order_id, $mobile, $amount, $merchant_id,$status_code,$status_message,$transaction_no);
+
                     return response('Done');
                 }
             }
@@ -45,9 +48,9 @@ class PaymentCallbackController extends Controller
         return response('Failed', 400);
     }
 
-    private function handleSuccessfulPayment($transaction_id, $order_id, $mobile, $amount, $merchant_id, $status_code, $status_message, $transaction_no)
+    private function handleSuccessfulPayment($transaction_id,$order_id, $mobile, $amount, $merchant_id,$status_code,$status_message,$transaction_no)
     {
-        // Insert payment record into payments table
+        // Insert payment record
         DB::table('payments')->insert([
             'order_id' => $order_id,
             'phone_number' => $mobile,
@@ -56,25 +59,20 @@ class PaymentCallbackController extends Controller
             'status_message' => $status_message,
             'status_code' => $status_code,
             'transaction_no' => $transaction_no,
-            'merchant_id' => $merchant_id,
+            'merchant_id'=> $merchant_id,
             'id' => $transaction_id
         ]);
 
-        // Get the merchant's details (phone number and name)
+        // Get the merchant's phone number
         $merchant = DB::table('merchants')->where('merchant_id', $merchant_id)->first();
         if ($merchant) {
             $merchant_phone_number = $merchant->phone_number;
-            $merchant_name = $merchant->merchants_name;  
 
+            // Send SMS after successful transaction
+            $successMessage = "Payment of " . $amount . " GHS made by " . $mobile . " was successful. \n" . "Powered by Emergent  ";
 
-            // Send SMS to the merchant
-            $successMessageToMerchant = "Payment of " . $amount . " GHS made by " . $mobile . " was successful. \n" . "Powered by Emergent  ";
-            $this->sendSMS($merchant_phone_number, $successMessageToMerchant);
-
-            // Send SMS to the user (payer) confirming the payment
-           $successMessageToUser = "Hello! You have successfully paid GHS " . $amount . " to " . $merchant_name . ".\n\nSimplified payments for everyone.\nPowered by Emergent Payments. Contact us on 0302263014.";
-           $this->sendSMS($mobile, $successMessageToUser);
-
+            // Send the SMS to the merchant's phone number
+            $this->sendSMS($merchant_phone_number, $successMessage);
         }
     }
 
@@ -83,7 +81,7 @@ class PaymentCallbackController extends Controller
         // API endpoint
         $url = "https://deywuro.com/api/sms";
 
-        // Data for the API
+        // The data to send to the API
         $postData = array(
             'username' => 'emergentpayment',
             'password' => 'Mission@1',
