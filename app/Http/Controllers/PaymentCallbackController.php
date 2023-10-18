@@ -13,7 +13,7 @@ class PaymentCallbackController extends Controller
         $request->validate([
             'order_id' => 'required',
             'status_code' => 'required',
-            'name' => 'required'
+            'email' => 'required'
         ]);
 
         $order_id = $request->order_id;

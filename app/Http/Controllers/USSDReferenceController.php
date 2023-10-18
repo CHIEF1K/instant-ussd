@@ -5,18 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 
 
-
-class USSDController extends Controller
+class USSDReferenceController extends Controller
 {
-    public function handleUSSDRequest(Request $request,$merchant_id)
+    public function handleReferenceRequest(Request $request, $merchant_id)
     {
-        //return response()->json(['message' => 'Handling USSD request for merchant_id: ' . $merchant_id]);
-
         $mobile = $request->Mobile;
-        $session_id = $request->SessionId;
         $service_code = $request->ServiceCode;
         $type = $request->Type;
         $message = $request->Message;
@@ -24,13 +19,10 @@ class USSDController extends Controller
 
         $response = array();
 
-        //$merchant = DB::table('merchants')->where('ussd_code', $service_code)->first();
-
-        // Querying merchant using both ussd_code and merchant_id
         $merchant = DB::table('merchants')
-                     ->where('ussd_code', $service_code)
-                     ->where('merchant_id', $merchant_id)
-                     ->first();
+            ->where('ussd_code', $service_code)
+            ->where('merchant_id', $merchant_id)
+            ->first();
 
         if ($type === "initiation") {
             if ($merchant) {
@@ -47,24 +39,33 @@ class USSDController extends Controller
                 );
             }
         } elseif ($type === "response") {
-            $amount = trim($message);
+            if (!$request->session()->has('amount')) {
+                $amount = trim($message);
 
-            if (!is_numeric($amount)) {
-                $response_message = "Invalid amount entered. Please try again.";
-            } elseif ($amount <= 0) {
-                $response_message = "Amount must be greater than zero. Please try again.";
-            } else {
+                if (!is_numeric($amount)) {
+                    $response_message = "Invalid amount entered. Please try again.";
+                } elseif ($amount <= 0) {
+                    $response_message = "Amount must be greater than zero. Please try again.";
+                } else {
+                    $request->session()->put('amount', $amount);
+                    $response_message = "You have entered the amount: " . $amount . "\nPlease enter the reference:";
+                }
+            } elseif (!$request->session()->has('reference')) {
+                $reference = trim($message);
+
+                $request->session()->put('reference', $reference);
+
                 if ($merchant) {
                     $app_id = $merchant->app_id;
                     $app_key = $merchant->app_key;
-                  //  $merchants_name = $merchant->merchants_name;
                     $merchant_id = $merchant->merchant_id;
                     $order_id = Str::random(12);
+                    $amount = $request->session()->get('amount');
 
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
-                        "email" => $merchant_id, 
+                        "email" => $merchant_id,
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
@@ -72,6 +73,7 @@ class USSDController extends Controller
                         "mobile_network" => strtoupper($operator),
                         "order_id" => $order_id,
                         "order_desc" => "Payment",
+                        "merClientAcct" => $reference,
                     );
 
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
@@ -103,33 +105,30 @@ class USSDController extends Controller
                         $return = json_decode($response_message);
                         $params = json_decode($response_message, true);
 
-
                         if ($paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first()) {
                             $transaction_id = $paymentTransaction->id;
 
-
                             DB::table('payment_transactions')
-                            ->where('id', $transaction_id)
-                            ->update([
-                                'status_code' => $return->status_code,
-                                'amount' => $amount,
-                                'status_message' => $return->status_message,
-                                'merchantcode' => $return->merchantcode,
-                                'transaction_no' => $return->transaction_no,
-                                'resource_id' => $mobile,
-                                'transaction_type' => 'payment',
-                                'order_id' => $order_id,
-                                'merchant_name'=> $merchant_id,
-                                'client_timestamp' => DB::raw('CURRENT_TIMESTAMP'),
-                            ]);
-
+                                ->where('id', $transaction_id)
+                                ->update(array(
+                                    'status_code' => $return->status_code,
+                                    'amount' => $amount,
+                                    'status_message' => $return->status_message,
+                                    'merchantcode' => $return->merchantcode,
+                                    'transaction_no' => $return->transaction_no,
+                                    'resource_id' => $mobile,
+                                    'transaction_type' => 'payment',
+                                    'order_id' => $order_id,
+                                    'merchant_name' => $merchant_id,
+                                    'client_timestamp' => DB::raw('CURRENT_TIMESTAMP'),
+                                ));
                         } else {
                             $sql = "INSERT INTO payment_transactions 
                                     (status_code, amount, status_message, merchantcode, transaction_no, resource_id, transaction_type, order_id, merchants_name, client_timestamp) 
                                     VALUES 
                                     (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
 
-                            DB::insert($sql, [
+                            DB::insert($sql, array(
                                 $return->status_code,
                                 $amount,
                                 $return->status_message,
@@ -139,18 +138,15 @@ class USSDController extends Controller
                                 'payment',
                                 $order_id,
                                 $merchant_id,
-                            ]);
+                            ));
                         }
 
-                        $paymentTransaction = DB::table('mother_merchants.payment_transactions')->where('order_id', $order_id)->first();
-
-                        if ($return->status_code == 1) {
+                        if ($return->statuscode == 1) {
                             $response_message = "You will receive a payment prompt to complete your payment";
                         } else {
                             $response_message = "E3. Please Try Again Later.";
                         }
                     }
-
                     $response = [
                         "Type" => "Release",
                         "Message" => $response_message

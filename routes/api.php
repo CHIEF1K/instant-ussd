@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\USSDController;
 use App\Http\Controllers\PaymentCallbackController;
-
+use App\Http\Controllers\USSDReferenceController; 
 
 /*
 |--------------------------------------------------------------------------
@@ -12,7 +12,7 @@ use App\Http\Controllers\PaymentCallbackController;
 |--------------------------------------------------------------------------
 |
 | Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
+| routes are loaded by the RouteServiceProvider, and all of them will
 | be assigned to the "api" middleware group. Make something great!
 |
 */
@@ -23,4 +23,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::post('/ussd/{merchant_id}', [USSDController::class, 'handleUSSDRequest']);
 Route::post('/payment-callback', [PaymentCallbackController::class, 'handlePaymentCallback']);
-
+Route::post('/handle-reference/{merchant_id}', [USSDReferenceController::class, 'handleReferenceRequest']); 
