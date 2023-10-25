@@ -13,12 +13,12 @@ class PaymentCallbackController extends Controller
         $request->validate([
             'order_id' => 'required',
             'status_code' => 'required',
-            'email' => 'required'
+            'name' => 'required'
         ]);
 
         $order_id = $request->order_id;
         $status_code = $request->status_code;
-        $merchant_id = $request->email; // Extract the merchant_name from the request
+        $merchant_id = $request->name; // Extract the merchant_name from the request
 
         if ($status_code == 1) {
             // Get the Transaction Record
