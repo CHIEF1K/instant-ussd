@@ -147,12 +147,11 @@ class USSDReferenceController extends Controller
                 $reference = trim($message);
 
             
-                // Check if a payment reference already exists for the user
                 $number = $request->input('Mobile');
                 $existingReference = DB::table('mother_merchants.users')
                     ->where('phone_number', $number)
                     ->value('payment_reference');
-            
+                
                 if ($existingReference) {
                     // If the user has an existing reference, update it
                     $updatedReference = $existingReference . ', ' . $reference;
@@ -165,10 +164,11 @@ class USSDReferenceController extends Controller
                         ->where('phone_number', $number)
                         ->update(['payment_reference' => $reference]);
                 }
+                
             
                 // Place your payment prompt code here
                 $number = $request->input('Mobile');
-                $paymentData = DB::table('UniqueIns.validation_results')
+                $paymentData = DB::table('mother_merchants.users')
                     ->where('phone_number', $number)
                     ->select('payment_amount', 'payment_reference')
                     ->first();
