@@ -19,49 +19,167 @@ class USSDReferenceController extends Controller
 
         $response = array();
 
+        $number = $request->input('Mobile');
+
+
+        $user = DB::table('mother_merchants.users')->where('phone_number', $number)->first();
+
+        if ($user) {
+            // Update the existing record for the user
+            try {
+                DB::table('mother_merchants.users')
+                    ->where('phone_number', $number)
+                    ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                $errorMessage = "Failed to execute SQL query: " . $e->getMessage();
+                error_log($errorMessage);
+        
+                return response()->json([
+                    "Type" => "Release",
+                    "Message" => $errorMessage
+                ]);
+            }
+        } else {
+            // Insert a new record for the user
+            try {
+                DB::table('mother_merchants.users')->insert([
+                    'user_name' => $number,
+                    'phone_number' => $number,
+                    'previous_step' => 'welcome',
+                    'date_updated' => now(),
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                $errorMessage = "Failed to execute SQL query: " . $e->getMessage();
+                error_log($errorMessage);
+        
+                return response()->json([
+                    "Type" => "Release",
+                    "Message" => $errorMessage
+                ]);
+            }
+        
+            $user= DB::table('users')
+                ->where('phone_number', $number)
+                ->first();
+        }
+
+
+        //ussd session starting
         $merchant = DB::table('merchants')
             ->where('ussd_code', $service_code)
             ->where('merchant_id', $merchant_id)
             ->first();
 
-        if ($type === "initiation") {
-            if ($merchant) {
-                $merchants_name = $merchant->merchants_name;
-                $merchant_id = $merchant->merchant_id;
-                $response = array(
-                    "Type" => "Response",
-                    "Message" => "Welcome to " . $merchants_name . ".\nPlease enter the amount to pay:"
-                );
-            } else {
-                $response = array(
-                    "Type" => "Release",
-                    "Message" => "Sorry, This Merchant is not registered."
-                );
-            }
-        } elseif ($type === "response") {
-            if (!$request->session()->has('amount')) {
-                $amount = trim($message);
+            
 
-                if (!is_numeric($amount)) {
-                    $response_message = "Invalid amount entered. Please try again.";
-                } elseif ($amount <= 0) {
-                    $response_message = "Amount must be greater than zero. Please try again.";
+            if ($type === "initiation") {
+                if ($merchant) {
+                    $merchants_name = $merchant->merchants_name;
+                    $merchant_id = $merchant->merchant_id;
+                    $response = array(
+                        "Type" => "Response",
+                        "Message" => "Welcome to " . $merchants_name . ".\nPlease enter the amount to pay:"
+                    );
+            
+                    $number = $request->input('Mobile');
+            
+                    // Update the user's previous step to 'welcome_enter_amount'
+                    DB::table('mother_merchants.users')
+                        ->where('phone_number', $number)
+                        ->update(['previous_step' => 'welcome_enter_amount', 'date_updated' => now()]);
                 } else {
-                    $request->session()->put('amount', $amount);
-                    $response_message = "You have entered the amount: " . $amount . "\nPlease enter the reference:";
+                    $response = array(
+                        "Type" => "Release",
+                        "Message" => "Sorry, This Merchant is not registered."
+                    );
                 }
-            } elseif (!$request->session()->has('reference')) {
+            } else if ($user->previous_step == "welcome_enter_amount") {
+                // Check if the message is a valid amount
+                $amount = trim($message);
+                if (!is_numeric($amount)) {
+                    // Handle the case where the user entered an invalid amount
+                    $response = array(
+                        "Type" => "Response",
+                        "Message" => "Invalid amount. Please enter a valid amount to pay:"
+                    );
+                } else {
+                    $number = $request->input('Mobile');
+            
+                    // Check if a payment amount already exists for the user
+                    $existingAmount = DB::table('mother_merchants.users')
+                        ->where('phone_number', $number)
+                        ->value('payment_amount');
+            
+                    if ($existingAmount) {
+                        // If the user has an existing amount, update it
+                        $updatedAmount = $existingAmount + $amount;
+                        DB::table('mother_merchants.users')
+                            ->where('phone_number', $number)
+                            ->update(['payment_amount' => $updatedAmount]);
+                    } else {
+                        // If the user does not have an existing amount, create a new entry
+                        DB::table('mother_merchants.users')
+                            ->where('phone_number', $number)
+                            ->update(['payment_amount' => $amount]);
+                    }
+            
+                    // Update the user's previous step to 'welcome_enter_amount'
+                    DB::table('mother_merchants.users')
+                        ->where('phone_number', $number)
+                        ->update(['previous_step' => 'welcome_enter_amount', 'date_updated' => now()]);
+            
+                    // Ask the user to enter the reference
+                    $response = array(
+                        "Type" => "Response",
+                        "Message" => "You have entered the amount: " . $amount . "\nPlease enter the reference:"
+                    );
+            
+                    // Update the user's previous step to 'enter_reference'
+                    DB::table('mother_merchants.users')
+                        ->where('phone_number', $number)
+                        ->update(['previous_step' => 'enter_reference', 'date_updated' => now()]);
+                }
+            } else if ($user->previous_step == "enter_reference") {
+                // This is the part where the user has entered the reference
+                $number = $request->input('Mobile');
                 $reference = trim($message);
-
-                $request->session()->put('reference', $reference);
-
+            
+                // Check if a payment reference already exists for the user
+                $existingReference = DB::table('mother_merchants.users')
+                    ->where('phone_number', $number)
+                    ->value('payment_reference');
+            
+                if ($existingReference) {
+                    // If the user has an existing reference, update it
+                    $updatedReference = $existingReference . ', ' . $reference;
+                    DB::table('mother_merchants.users')
+                        ->where('phone_number', $number)
+                        ->update(['payment_reference' => $updatedReference]);
+                } else {
+                    // If the user does not have an existing reference, create a new entry
+                    DB::table('mother_merchants.users')
+                        ->where('phone_number', $number)
+                        ->update(['payment_reference' => $reference]);
+                }
+            
+                // Place your payment prompt code here
+                $number = $request->input('Mobile');
+                $paymentData = DB::table('UniqueIns.validation_results')
+                    ->where('phone_number', $number)
+                    ->select('payment_amount', 'payment_reference')
+                    ->first();
+                
+                if ($paymentData) {
+                    $paymentAmount = $paymentData->payment_amount;
+                    $paymentReference = $paymentData->payment_reference;
+                }
+                
                 if ($merchant) {
                     $app_id = $merchant->app_id;
                     $app_key = $merchant->app_key;
                     $merchant_id = $merchant->merchant_id;
                     $order_id = Str::random(12);
-                    $amount = $request->session()->get('amount');
-
+                
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
@@ -69,17 +187,17 @@ class USSDReferenceController extends Controller
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
-                        "amount" => $amount,
+                        "amount" => $paymentAmount,
                         "mobile_network" => strtoupper($operator),
                         "order_id" => $order_id,
                         "order_desc" => "Payment",
-                        "merClientAcct" => $reference,
+                        "merClientAcct" => $paymentReference,
                     );
-
+            
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
-
+            
                     $curl = curl_init();
-
+            
                     curl_setopt_array($curl, array(
                         CURLOPT_URL => "https://api.interpayafrica.com/v3/interapi.svc/CreateMMPayment",
                         CURLOPT_RETURNTRANSFER => true,
@@ -93,26 +211,26 @@ class USSDReferenceController extends Controller
                             "Content-Type: application/json",
                         ),
                     ));
-
+            
                     $response_message = curl_exec($curl);
                     $err = curl_error($curl);
-
+            
                     curl_close($curl);
-
+            
                     if ($err) {
                         $response_message = "E1. Please Try Again Later.";
                     } else {
                         $return = json_decode($response_message);
                         $params = json_decode($response_message, true);
-
+            
                         if ($paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first()) {
                             $transaction_id = $paymentTransaction->id;
-
+            
                             DB::table('payment_transactions')
                                 ->where('id', $transaction_id)
                                 ->update(array(
                                     'status_code' => $return->status_code,
-                                    'amount' => $amount,
+                                    'amount' => $paymentAmount,
                                     'status_message' => $return->status_message,
                                     'merchantcode' => $return->merchantcode,
                                     'transaction_no' => $return->transaction_no,
@@ -127,10 +245,10 @@ class USSDReferenceController extends Controller
                                     (status_code, amount, status_message, merchantcode, transaction_no, resource_id, transaction_type, order_id, merchants_name, client_timestamp) 
                                     VALUES 
                                     (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
-
+            
                             DB::insert($sql, array(
                                 $return->status_code,
-                                $amount,
+                                $paymentAmount,
                                 $return->status_message,
                                 $return->merchantcode,
                                 $return->transaction_no,
@@ -140,7 +258,7 @@ class USSDReferenceController extends Controller
                                 $merchant_id,
                             ));
                         }
-
+            
                         if ($return->statuscode == 1) {
                             $response_message = "You will receive a payment prompt to complete your payment";
                         } else {
@@ -155,8 +273,11 @@ class USSDReferenceController extends Controller
                     $response_message = "Sorry, This Merchant is not registered.";
                 }
             }
+            return response()->json($response);
+
         }
 
-        return response()->json($response);
     }
-}
+            
+            
+    
