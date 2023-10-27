@@ -139,12 +139,16 @@ class USSDReferenceController extends Controller
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'enter_reference', 'date_updated' => now()]);
                 }
-            } else if ($user->previous_step == "enter_reference") {
-                // This is the part where the user has entered the reference
-                $number = $request->input('Mobile');
+
+            } 
+            
+            
+            if ($user->previous_step == "enter_reference") {
                 $reference = trim($message);
+
             
                 // Check if a payment reference already exists for the user
+                $number = $request->input('Mobile');
                 $existingReference = DB::table('mother_merchants.users')
                     ->where('phone_number', $number)
                     ->value('payment_reference');
@@ -259,7 +263,7 @@ class USSDReferenceController extends Controller
                             ));
                         }
             
-                        if ($return->statuscode == 1) {
+                        if ($return->status_code == 1) {
                             $response_message = "You will receive a payment prompt to complete your payment";
                         } else {
                             $response_message = "E3. Please Try Again Later.";
