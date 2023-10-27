@@ -131,7 +131,7 @@ class USSDReferenceController extends Controller
                     // Ask the user to enter the reference
                     $response = array(
                         "Type" => "Response",
-                        "Message" => "You have entered the amount: " . $amount . "\nPlease enter the reference:"
+                        "Message" => "You are making a payment of GHS:: " . $amount . "\nPlease enter the reference:"
                     );
             
                     // Update the user's previous step to 'enter_reference'
