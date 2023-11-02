@@ -103,7 +103,31 @@ class USSDReferenceController extends Controller
                     );
                 } else {
                     $number = $request->input('Mobile');
+                    // Check if a payment amount already exists for the user
+                    $existingAmount = DB::table('mother_merchants.users')
+                        ->where('phone_number', $number)
+                        ->value('payment_amount');
+                    
+                        $number = $request->input('Mobile');
 
+                        // Check if a payment amount already exists for the user
+                        $existingAmount = DB::table('mother_merchants.users')
+                            ->where('phone_number', $number)
+                            ->value('payment_amount');
+                        
+                        if ($existingAmount !== null) {
+                            // If the user has an existing amount, update it
+                            DB::table('mother_merchants.users')
+                                ->where('phone_number', $number)
+                                ->update(['payment_amount' => $amount, 'date_updated' => now()]);
+                        } else {
+                            // If the user does not have an existing amount, insert it into the same column
+                            DB::table('mother_merchants.users')
+                                ->where('phone_number', $number)
+                                ->update(['payment_amount' => $amount, 'date_updated' => now()]);
+                        }
+                        
+                    
             
                     // Update the user's previous step to 'welcome_enter_amount'
                     DB::table('mother_merchants.users')
