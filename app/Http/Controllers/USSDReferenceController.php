@@ -43,6 +43,7 @@ class USSDReferenceController extends Controller
             // Insert a new record for the user
             try {
                 DB::table('mother_merchants.users')->insert([
+                    'user_name' => $number,    
                     'phone_number' => $number,
                     'previous_step' => 'welcome',
                     'date_updated' => now(),
