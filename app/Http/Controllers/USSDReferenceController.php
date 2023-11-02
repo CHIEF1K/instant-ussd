@@ -43,7 +43,7 @@ class USSDReferenceController extends Controller
             // Insert a new record for the user
             try {
                 DB::table('mother_merchants.users')->insert([
-                    'user_name' => $number,    
+                    'user_name' => $number,
                     'phone_number' => $number,
                     'previous_step' => 'welcome',
                     'date_updated' => now(),
@@ -272,6 +272,15 @@ class USSDReferenceController extends Controller
             
                         if ($return->status_code == 1) {
                             $response_message = "You will receive a payment prompt to complete your payment";
+
+                            $number = $request->input('Mobile');
+            
+                        // Update the user's previous step to 'welcome_enter_amount'
+                        DB::table('mother_merchants.users')
+                            ->where('phone_number', $number)
+                            ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
+
+
                         } else {
                             $response_message = "E3. Please Try Again Later.";
                         }
