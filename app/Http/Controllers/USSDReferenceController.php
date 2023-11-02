@@ -103,7 +103,6 @@ class USSDReferenceController extends Controller
                     );
                 } else {
                     $number = $request->input('Mobile');
-                    
                     // Check if a payment amount already exists for the user
                     $existingAmount = DB::table('mother_merchants.users')
                         ->where('phone_number', $number)
@@ -111,16 +110,19 @@ class USSDReferenceController extends Controller
                     
                     if ($existingAmount) {
                         // If the user has an existing amount, update it
+                        $number = $request->input('Mobile');
                         DB::table('mother_merchants.users')
                             ->where('phone_number', $number)
-                            ->update(['payment_amount' => $amount]);
-                    } else {
+                            ->update(['payment_amount' => $amount, 'date_updated' => now()]);
+
+
+                    } /*else {
                         // If the user does not have an existing amount, create a new entry
                         DB::table('mother_merchants.users')->insert([
                             'phone_number' => $number,
                             'payment_amount' => $amount
                         ]);
-                    }
+                    }*/
             
                     // Update the user's previous step to 'welcome_enter_amount'
                     DB::table('mother_merchants.users')
@@ -130,7 +132,7 @@ class USSDReferenceController extends Controller
                     // Ask the user to enter the reference
                     $response = array(
                         "Type" => "Response",
-                        "Message" => "You are making a payment of GHS:: " . $amount . "\nPlease enter the reference:"
+                        "Message" => "You have entered the amount: " . $amount . "\nPlease enter the reference:"
                     );
             
                     // Update the user's previous step to 'enter_reference'
@@ -154,14 +156,16 @@ class USSDReferenceController extends Controller
                     // If the user has an existing reference, update it
                     DB::table('mother_merchants.users')
                         ->where('phone_number', $number)
-                        ->update(['payment_reference' => $reference]);
-                } else {
+                        ->update(['previous_step' => 'reference_entered', 'date_updated' => now(), 'payment_reference' => $reference]);
+
+                        
+                } /*else {
                     // If the user does not have an existing reference, create a new entry
                     DB::table('mother_merchants.users')->insert([
                         'phone_number' => $number,
                         'payment_reference' => $reference
                     ]);
-                }        
+                }    */    
             
                 // Place your payment prompt code here
                 $number = $request->input('Mobile');
