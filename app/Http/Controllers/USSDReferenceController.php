@@ -103,24 +103,7 @@ class USSDReferenceController extends Controller
                     );
                 } else {
                     $number = $request->input('Mobile');
-                    // Check if a payment amount already exists for the user
-                    $existingAmount = DB::table('mother_merchants.users')
-                    ->where('phone_number', $number)
-                    ->value('payment_amount');
-                
-                // Always update the 'payment_amount' and 'date_updated' for the user
-                DB::table('mother_merchants.users')
-                    ->where('phone_number', $number)
-                    ->update(['payment_amount' => $amount, 'date_updated' => now()]);
-                
-                // If the 'payment_amount' was initially null, you can choose to insert it here
-                if ($existingAmount === null) {
-                    // You can insert additional information if needed
-                    DB::table('mother_merchants.users')
-                        ->where('phone_number', $number)
-                        ->update(['payment_amount' => $amount]);
-    
-}
+
             
                     // Update the user's previous step to 'welcome_enter_amount'
                     DB::table('mother_merchants.users')
