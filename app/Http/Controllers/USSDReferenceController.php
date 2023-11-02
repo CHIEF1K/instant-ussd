@@ -156,7 +156,7 @@ class USSDReferenceController extends Controller
                     // If the user has an existing reference, update it
                     DB::table('mother_merchants.users')
                         ->where('phone_number', $number)
-                        ->update(['previous_step' => 'reference_entered', 'date_updated' => now(), 'payment_reference' => $reference]);
+                        ->update(['previous_step' => 'enter_reference', 'date_updated' => now(), 'payment_reference' => $reference]);
 
                         
                 } /*else {
