@@ -79,7 +79,7 @@ class Peer2PeerController extends Controller
         }
 
                 // Build the URL for the POST request with the number appended
-                $url = "https://emergentghanadev.com/api/name-validation/test/$number";
+             /*   $url = "https://emergentghanadev.com/api/name-validation/test/$number";
                     
                 // Make an HTTP POST request to the URL
                 $response = Http::post($url);
@@ -100,7 +100,7 @@ class Peer2PeerController extends Controller
                     $surname = $apiResponse['surname'];
                     $valid = $apiResponse['valid'];
 
-
+*/
 
 
 
@@ -245,7 +245,7 @@ class Peer2PeerController extends Controller
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
-                        "name" => $firstName,
+                      //  "name" => $firstName,
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
