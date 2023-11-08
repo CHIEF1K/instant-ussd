@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\USSDController;
 use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\USSDReferenceController; 
+use App\Http\Controllers\Peer2PeerController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -24,3 +26,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/ussd/{merchant_id}', [USSDController::class, 'handleUSSDRequest']);
 Route::post('/payment-callback', [PaymentCallbackController::class, 'handlePaymentCallback']);
 Route::post('/handle-reference/{merchant_id}', [USSDReferenceController::class, 'handleReferenceRequest']); 
+Route::post('/p2p/{merchant_id}', [Peer2PeerController::class, 'handleP2PRequest']);
