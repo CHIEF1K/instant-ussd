@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 
-class USSDReferenceController extends Controller
+class Peer2PeerController extends Controller
 {
-    public function handleReferenceRequest(Request $request, $merchant_id)
+    public function handleP2PRequest(Request $request, $merchant_id) 
     {
          $mobile = $request->Mobile;
         $session_id = $request->SessionId;
@@ -23,12 +23,12 @@ class USSDReferenceController extends Controller
         $number = $request->input('Mobile');
 
 
-        $user = DB::table('mother_merchants.users')->where('phone_number', $number)->first();
+        $user = DB::table('peer2peer.users')->where('phone_number', $number)->first();
 
         if ($user) {
             // Update the existing record for the user
             try {
-                DB::table('mother_merchants.users')
+                DB::table('peer2peer.users')
                     ->where('phone_number', $number)
                     ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
             } catch (\Illuminate\Database\QueryException $e) {
@@ -43,7 +43,7 @@ class USSDReferenceController extends Controller
         } else {
             // Insert a new record for the user
             try {
-                DB::table('mother_merchants.users')->insert([
+                DB::table('peer2peer.users')->insert([
                     'user_name' => $number,
                     'phone_number' => $number,
                     'previous_step' => 'welcome',
@@ -86,7 +86,7 @@ class USSDReferenceController extends Controller
                     $number = $request->input('Mobile');
             
                     // Update the user's previous step to 'welcome_enter_amount'
-                    DB::table('mother_merchants.users')
+                    DB::table('peer2peer.users')
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'welcome_enter_amount', 'date_updated' => now()]);
                 } else {
@@ -105,7 +105,7 @@ class USSDReferenceController extends Controller
                         "Message" => "Invalid amount. Please enter a valid amount to pay:"
                     );
 
-                    DB::table('mother_merchants.users')
+                    DB::table('peer2peer.users')
                     ->where('phone_number', $number)
                     ->update(['previous_step' => 'welcome_enter_amount', 'date_updated' => now()]);
         
@@ -114,7 +114,7 @@ class USSDReferenceController extends Controller
                 } else {
                     $number = $request->input('Mobile');
                     // Check if a payment amount already exists for the user
-                    $existingAmount = DB::table('mother_merchants.users')
+                    $existingAmount = DB::table('peer2peer.users')
                         ->where('phone_number', $number)
                         ->value('payment_amount');
                     
@@ -122,12 +122,12 @@ class USSDReferenceController extends Controller
                         
                         if ($existingAmount !== null) {
                             // If the user has an existing amount, update it
-                            DB::table('mother_merchants.users')
+                            DB::table('peer2peer.users')
                                 ->where('phone_number', $number)
                                 ->update(['payment_amount' => $amount, 'date_updated' => now()]);
                         } else {
                             // If the user does not have an existing amount, insert it into the same column
-                            DB::table('mother_merchants.users')
+                            DB::table('peer2peer.users')
                                 ->where('phone_number', $number)
                                 ->update(['payment_amount' => $amount, 'date_updated' => now()]);
                         }
@@ -135,7 +135,7 @@ class USSDReferenceController extends Controller
                     
             
                     // Update the user's previous step to 'welcome_enter_amount'
-                    DB::table('mother_merchants.users')
+                    DB::table('peer2peer.users')
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'welcome_enter_amount', 'date_updated' => now()]);
             
@@ -146,7 +146,7 @@ class USSDReferenceController extends Controller
                     );
             
                     // Update the user's previous step to 'enter_reference'
-                    DB::table('mother_merchants.users')
+                    DB::table('peer2peer.users')
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'enter_reference', 'date_updated' => now()]);
                 }
@@ -158,20 +158,20 @@ class USSDReferenceController extends Controller
                 $reference = trim($message);
             
                 $number = $request->input('Mobile');
-                $existingReference = DB::table('mother_merchants.users')
+                $existingReference = DB::table('peer2peer.users')
                     ->where('phone_number', $number)
                     ->first();
             
                 if ($existingReference) {
                     // If the user has an existing reference, update it
-                    DB::table('mother_merchants.users')
+                    DB::table('peer2peer.users')
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'enter_reference', 'date_updated' => now(), 'payment_reference' => $reference]);
 
                         
                 } /*else {
                     // If the user does not have an existing reference, create a new entry
-                    DB::table('mother_merchants.users')->insert([
+                    DB::table('peer2peer.users')->insert([
                         'phone_number' => $number,
                         'payment_reference' => $reference
                     ]);
@@ -179,7 +179,7 @@ class USSDReferenceController extends Controller
             
                 // Place your payment prompt code here
                 $number = $request->input('Mobile');
-                $paymentData = DB::table('mother_merchants.users')
+                $paymentData = DB::table('peer2peer.users')
                     ->where('phone_number', $number)
                     ->select('payment_amount', 'payment_reference')
                     ->first();
@@ -280,7 +280,7 @@ class USSDReferenceController extends Controller
                             $number = $request->input('Mobile');
             
                         // Update the user's previous step to 'welcome_enter_amount'
-                        DB::table('mother_merchants.users')
+                        DB::table('peer2peer.users')
                             ->where('phone_number', $number)
                             ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
 
@@ -289,7 +289,7 @@ class USSDReferenceController extends Controller
                             $response_message = "E3. Please Try Again Later.";
 
                             $number = $request->input('Mobile');
-                            DB::table('mother_merchants.users')
+                            DB::table('peer2peer.users')
                             ->where('phone_number', $number)
                             ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
 
