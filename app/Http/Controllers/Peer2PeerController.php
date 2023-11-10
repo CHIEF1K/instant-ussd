@@ -4,19 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache;
 
 
-class Peer2PeerController extends Controller
-
+class USSDReferenceController extends Controller
 {
-    public function handleP2PRequest(Request $request, $merchant_id)   
-    
+    public function handleReferenceRequest(Request $request, $merchant_id)
     {
-        $mobile = $request->Mobile;
+         $mobile = $request->Mobile;
+        $session_id = $request->SessionId;
         $service_code = $request->ServiceCode;
         $type = $request->Type;
         $message = $request->Message;
@@ -26,22 +22,15 @@ class Peer2PeerController extends Controller
 
         $number = $request->input('Mobile');
 
-        Log::info("Value extracted from 'Mobile' parameter: $number");
 
-
-
-        $number = $request->input('Mobile');
-        $user = DB::table('peer2peer.users')->where('phone_number', $number)->first();
+        $user = DB::table('mother_merchants.users')->where('phone_number', $number)->first();
 
         if ($user) {
             // Update the existing record for the user
             try {
-                DB::table('peer2peer.users')
+                DB::table('mother_merchants.users')
                     ->where('phone_number', $number)
                     ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
-
-                    Log::info("User record updated successfully.");
-
             } catch (\Illuminate\Database\QueryException $e) {
                 $errorMessage = "Failed to execute SQL query: " . $e->getMessage();
                 error_log($errorMessage);
@@ -54,15 +43,12 @@ class Peer2PeerController extends Controller
         } else {
             // Insert a new record for the user
             try {
-                DB::table('peer2peer.users')->insert([
+                DB::table('mother_merchants.users')->insert([
                     'user_name' => $number,
                     'phone_number' => $number,
                     'previous_step' => 'welcome',
                     'date_updated' => now(),
                 ]);
-
-                Log::info("User record inseerted successfully.");
-
             } catch (\Illuminate\Database\QueryException $e) {
                 $errorMessage = "Failed to execute SQL query: " . $e->getMessage();
                 error_log($errorMessage);
@@ -78,78 +64,38 @@ class Peer2PeerController extends Controller
                 ->first();
         }
 
-                // Build the URL for the POST request with the number appended
-             /*   $url = "https://emergentghanadev.com/api/name-validation/test/$number";
-                    
-                // Make an HTTP POST request to the URL
-                $response = Http::post($url);
-
-                // Log the response
-                Log::info("API Response: " . $response->body());
-
-
-                // Decode the JSON response and store it in an array
-                    $apiResponse = json_decode($response->body(), true);
-
-                    // Now, $apiResponse contains the API response as an associative array
-
-                    // You can access the values like this
-                    $statusCode = $apiResponse['status_code'];
-                    $statusMessage = $apiResponse['status_message'];
-                    $firstName = $apiResponse['firstname'];
-                    $surname = $apiResponse['surname'];
-                    $valid = $apiResponse['valid'];
-
-*/
-
-
 
         //ussd session starting
-        $merchant = DB::table('peer2peer.merchants')
+        $merchant = DB::table('merchants')
             ->where('ussd_code', $service_code)
             ->where('merchant_id', $merchant_id)
             ->first();
 
             
 
-                if ($type === "initiation") {
+            if ($type === "initiation") {
+
                 if ($merchant) {
                     $merchants_name = $merchant->merchants_name;
                     $merchant_id = $merchant->merchant_id;
-                    $responseMessage = "Welcome to " . $merchants_name . ".\nPlease enter the amount to pay:";
-                    
+                    $response = array(
+                        "Type" => "Response",
+                        "Message" => "Welcome to " . $merchants_name . ".\nPlease enter the amount to pay:"
+                    );
+            
                     $number = $request->input('Mobile');
-                    
+            
                     // Update the user's previous step to 'welcome_enter_amount'
-                    $affected = DB::table('peer2peer.users')
+                    DB::table('mother_merchants.users')
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'welcome_enter_amount', 'date_updated' => now()]);
-                    
-                    if ($affected === 0) {
-                        $errorMessage = "Failed to update user's previous step.";
-                        error_log($errorMessage);
-                        
-                        return response()->json([
-                            "Type" => "Release",
-                            "Message" => $errorMessage
-                        ]);
-                    }
-                    
-                    return response()->json([
-                        "Type" => "Response",
-                        "Message" => $responseMessage
-                    ]);
+                } else {
+                    $response = array(
+                        "Type" => "Release",
+                        "Message" => "Sorry, This Merchant is not registered."
+                    );
                 }
-            } else {
-                $response = array(
-                    "Type" => "Release",
-                    "Message" => "Sorry, This Merchant is not registered."
-                );
-            }
-            
-            
-            
-            if ($user->previous_step == "welcome_enter_amount") {
+            } else if ($user->previous_step == "welcome_enter_amount") {
                 // Check if the message is a valid amount
                 $amount = trim($message);
                 if (!is_numeric($amount)) {
@@ -159,28 +105,29 @@ class Peer2PeerController extends Controller
                         "Message" => "Invalid amount. Please enter a valid amount to pay:"
                     );
 
-                    $affected =  DB::table('peer2peer.users')
+                    DB::table('mother_merchants.users')
                     ->where('phone_number', $number)
                     ->update(['previous_step' => 'welcome_enter_amount', 'date_updated' => now()]);
+        
 
 
                 } else {
                     $number = $request->input('Mobile');
                     // Check if a payment amount already exists for the user
-                    $existingAmount = DB::table('peer2peer.users')
+                    $existingAmount = DB::table('mother_merchants.users')
                         ->where('phone_number', $number)
                         ->value('payment_amount');
                     
                         $number = $request->input('Mobile');
-
+                        
                         if ($existingAmount !== null) {
                             // If the user has an existing amount, update it
-                            DB::table('peer2peer.users')
+                            DB::table('mother_merchants.users')
                                 ->where('phone_number', $number)
                                 ->update(['payment_amount' => $amount, 'date_updated' => now()]);
                         } else {
                             // If the user does not have an existing amount, insert it into the same column
-                            DB::table('peer2peer.users')
+                            DB::table('mother_merchants.users')
                                 ->where('phone_number', $number)
                                 ->update(['payment_amount' => $amount, 'date_updated' => now()]);
                         }
@@ -188,7 +135,7 @@ class Peer2PeerController extends Controller
                     
             
                     // Update the user's previous step to 'welcome_enter_amount'
-                    DB::table('peer2peer.users')
+                    DB::table('mother_merchants.users')
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'welcome_enter_amount', 'date_updated' => now()]);
             
@@ -199,7 +146,7 @@ class Peer2PeerController extends Controller
                     );
             
                     // Update the user's previous step to 'enter_reference'
-                    DB::table('peer2peer.users')
+                    DB::table('mother_merchants.users')
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'enter_reference', 'date_updated' => now()]);
                 }
@@ -211,22 +158,28 @@ class Peer2PeerController extends Controller
                 $reference = trim($message);
             
                 $number = $request->input('Mobile');
-                $existingReference = DB::table('peer2peer.users')
+                $existingReference = DB::table('mother_merchants.users')
                     ->where('phone_number', $number)
                     ->first();
             
                 if ($existingReference) {
                     // If the user has an existing reference, update it
-                    DB::table('peer2peer.users')
+                    DB::table('mother_merchants.users')
                         ->where('phone_number', $number)
                         ->update(['previous_step' => 'enter_reference', 'date_updated' => now(), 'payment_reference' => $reference]);
 
                         
-                }    
+                } /*else {
+                    // If the user does not have an existing reference, create a new entry
+                    DB::table('mother_merchants.users')->insert([
+                        'phone_number' => $number,
+                        'payment_reference' => $reference
+                    ]);
+                }    */    
             
                 // Place your payment prompt code here
                 $number = $request->input('Mobile');
-                $paymentData = DB::table('peer2peer.users')
+                $paymentData = DB::table('mother_merchants.users')
                     ->where('phone_number', $number)
                     ->select('payment_amount', 'payment_reference')
                     ->first();
@@ -245,15 +198,15 @@ class Peer2PeerController extends Controller
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
-                      //  "name" => $firstName,
+                        "name" => $merchant_id,
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
                         "amount" => $paymentAmount,
                         "mobile_network" => strtoupper($operator),
                         "order_id" => $order_id,
-                        "order_desc" => $paymentReference,
-                       "merClientAcct" => $merchant_id,
+                        "order_desc" => "Payment",
+                        "merClientAcct" => $paymentReference,
                     );
             
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
@@ -327,7 +280,7 @@ class Peer2PeerController extends Controller
                             $number = $request->input('Mobile');
             
                         // Update the user's previous step to 'welcome_enter_amount'
-                        DB::table('peer2peer.users')
+                        DB::table('mother_merchants.users')
                             ->where('phone_number', $number)
                             ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
 
@@ -336,7 +289,7 @@ class Peer2PeerController extends Controller
                             $response_message = "E3. Please Try Again Later.";
 
                             $number = $request->input('Mobile');
-                            DB::table('peer2peer.users')
+                            DB::table('mother_merchants.users')
                             ->where('phone_number', $number)
                             ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
 
