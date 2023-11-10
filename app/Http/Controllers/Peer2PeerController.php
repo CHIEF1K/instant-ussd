@@ -205,8 +205,8 @@ class USSDReferenceController extends Controller
                         "amount" => $paymentAmount,
                         "mobile_network" => strtoupper($operator),
                         "order_id" => $order_id,
-                        "order_desc" => "Payment",
-                        "merClientAcct" => $paymentReference,
+                        "order_desc" => $paymentReference,
+                       // "merClientAcct" => $paymentReference,
                     );
             
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
