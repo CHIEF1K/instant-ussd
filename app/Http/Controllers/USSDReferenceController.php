@@ -199,13 +199,14 @@ class USSDReferenceController extends Controller
                         "app_id" => $app_id,
                         "app_key" => $app_key,
                         "name" => $merchant_id,
+                        "email" => $paymentReference
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
                         "amount" => $paymentAmount,
                         "mobile_network" => strtoupper($operator),
                         "order_id" => $order_id,
-                        "order_desc" => $paymentReference,
+                        "order_desc" => "Payment",
                        // "merClientAcct" => $paymentReference,
                     );
             
