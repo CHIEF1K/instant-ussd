@@ -180,7 +180,7 @@ class Peer2PeerController extends Controller
     private function sendPostRequest($mobile)
 {
     // Build the URL for the POST request with the number appended
-    $url = "https://emergentghanadev.com/api/name-validation/test/$mobile";
+    $url = "https://emergentghanadev.com/api/name-validation/live/$mobile";
 
     try {
         // Make an HTTP POST request to the URL
