@@ -92,15 +92,15 @@ class P2PCallbackController extends Controller
             // data for cash out 
             $transactionType = "local";
             $paymentMode = "MMT";
-            $payeeName = "test Payee";
+            $payeeName = $merchant_name;
             $transCurrency = "GHS";
-            $merchTransRefNo = "310320";
+            $merchTransRefNo = $order_id;
             $recipientMobile = $merchant_phone_number; // Number of the merchant
             $payeeMobile = $mobile; // Number of the user
             $recipientName = "";
-            $transactionDate = now()->toDateString(); 
-            $expiryDate = now()->addDay()->toDateString(); 
-
+            $transactionDate = now()->format('/Date(Y-m-d\TH:i:s)/');
+            $expiryDate = now()->addDay()->format('/Date(Y-m-d\TH:i:s)/');
+            
             $logMessage = "Transaction Type: $transactionType, Payment Mode: $paymentMode, Payee Name: $payeeName, Trans Currency: $transCurrency, Merch Trans Ref No: $merchTransRefNo, Recipient Mobile: $recipientMobile, Payee Mobile: $payeeMobile, Recipient Name: $recipientName, Transaction Date: $transactionDate, Expiry Date: $expiryDate";
 
             Log::info($logMessage);
@@ -108,17 +108,16 @@ class P2PCallbackController extends Controller
             // Create the transaction data array
             $order_id = Str::random(12);
 
-                
                $json_data = array(
 
                 "app_id" => $app_id,
                 "app_key" => $app_key,
                 "transaction_type" => $transactionType,
                 "payment_mode" => $paymentMode,
-                "payee_name" => $payeeName,
+               "payee_name" => $payeeName,
                 "trans_currency" => $transCurrency,
                 "trans_amount" => $amount,
-                "merch_trans_ref_no" => $merchTransRefNo,
+                "merch_trans_ref_no" => $$order_id,
                 "payee_mobile" => $payeeMobile,
                 "recipient_mobile" => $recipientMobile,
                 "recipient_name" => $recipientName,
@@ -156,11 +155,11 @@ class P2PCallbackController extends Controller
                 $params = json_decode($response_message, true);
 
 
-                if ($paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first()) {
+                if ($paymentTransaction = DB::table('payment_trans_cashout')->where('merch_trans_ref_no', $order_id)->first()) {
                     $transaction_id = $paymentTransaction->id;
 
 
-                    DB::table('payment_transactions')
+                    DB::table('payment_trans_cashout')
                     ->where('id', $transaction_id)
                     ->update([
                         'status_code' => $return->status_code,
@@ -178,7 +177,7 @@ class P2PCallbackController extends Controller
                     ]);
 
                 } else {
-                    $sql = "INSERT INTO payment_transactions 
+                    $sql = "INSERT INTO payment_trans_cashout 
                     (status_code, amount, status_message, trans_ref_no, payee_mobile, recipient_mobile, transaction_type, merch_trans_ref_no, merchant_name, transaction_date, expiry_date, ) 
                     VALUES 
                     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, )";
