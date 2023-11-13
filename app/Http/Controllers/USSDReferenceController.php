@@ -195,11 +195,11 @@ class USSDReferenceController extends Controller
                     $merchant_id = $merchant->merchant_id;
                     $order_id = Str::random(12);
                 
-                    $json_data = array(
+                  $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
+                        "email" => $paymentReference,
                         "name" => $merchant_id,
-                        "email" => $paymentReference
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
@@ -207,7 +207,7 @@ class USSDReferenceController extends Controller
                         "mobile_network" => strtoupper($operator),
                         "order_id" => $order_id,
                         "order_desc" => "Payment",
-                       // "merClientAcct" => $paymentReference,
+
                     );
             
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
