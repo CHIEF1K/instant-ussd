@@ -13,7 +13,7 @@ class Peer2PeerController extends Controller
 {
     public function handleP2PRequest(Request $request, $merchant_id) 
     
-    {
+     {
         //return response()->json(['message' => 'Handling USSD request for merchant_id: ' . $merchant_id]);
 
         $mobile = $request->Mobile;
@@ -25,18 +25,13 @@ class Peer2PeerController extends Controller
 
         $response = array();
 
-        $mobile = $request->input('Mobile');
-
         $apiResponseData = $this->sendPostRequest($mobile);
 
-            $firstName = $apiResponseData['response']['firstname'] ?? ''; // Default to an empty string if not present
+        $firstName = $apiResponseData['response']['firstname'] ?? ''; // Default to an empty string if not present
 
-            Log::info("Extracted firstName: $firstName");
-
-        
+        Log::info("Extracted firstName: $firstName");
 
 
-        //$merchant = DB::table('merchants')->where('ussd_code', $service_code)->first();
 
         // Querying merchant using both ussd_code and merchant_id
         $merchant = DB::table('merchants')
@@ -73,7 +68,7 @@ class Peer2PeerController extends Controller
                     $merchant_id = $merchant->merchant_id;
                     $order_id = Str::random(12);
 
-                    $json_data = array(
+                       $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
                         "name" => $firstName,
@@ -176,39 +171,37 @@ class Peer2PeerController extends Controller
         return response()->json($response);
     }
 
-
     private function sendPostRequest($mobile)
-{
-    // Build the URL for the POST request with the number appended
-    $url = "https://emergentghanadev.com/api/name-validation/live/$mobile";
-
-    try {
-        // Make an HTTP POST request to the URL
-        $response = Http::post($url);
-
-        // Log the response
-        Log::info("API Response: " . $response->body());
-
-        // Decode the JSON response and store it in an array
-        $apiResponse = $response->json();
-
-        // You can access the values like this
-        $statusCode = $apiResponse['status_code'];
-        $statusMessage = $apiResponse['status_message'];
-        $firstName = $apiResponse['firstname'];
-        $surname = $apiResponse['surname'];
-        $valid = $apiResponse['valid'];
-
-        // Save the response in an array along with the phone number
-        $responseData = ['phone_number' => $mobile, 'response' => $apiResponse];
-
-        return $responseData;
-    } catch (\Exception $e) {
-        // Handle exceptions (e.g., connection issues)
-        Log::error("HTTP Request Error: " . $e->getMessage());
-        // You may want to return or log an error response here
-        return ['phone_number' => $mobile, 'error' => $e->getMessage()];
+    {
+        // Build the URL for the POST request with the number appended
+        $url = "https://emergentghanadev.com/api/name-validation/live/$mobile";
+    
+        try {
+            // Make an HTTP POST request to the URL
+            $response = Http::post($url);
+    
+            // Log the response
+            Log::info("API Response: " . $response->body());
+    
+            // Decode the JSON response and store it in an array
+            $apiResponse = $response->json();
+    
+            // You can access the values like this
+            $statusCode = $apiResponse['status_code'];
+            $statusMessage = $apiResponse['status_message'];
+            $firstName = $apiResponse['firstname'];
+            $surname = $apiResponse['surname'];
+            $valid = $apiResponse['valid'];
+    
+            // Save the response in an array along with the phone number
+            $responseData = ['phone_number' => $mobile, 'response' => $apiResponse];
+    
+            return $responseData;
+        } catch (\Exception $e) {
+            // Handle exceptions (e.g., connection issues)
+            Log::error("HTTP Request Error: " . $e->getMessage());
+            // You may want to return or log an error response here
+            return ['phone_number' => $mobile, 'error' => $e->getMessage()];
+        }
     }
-}
-
 }
