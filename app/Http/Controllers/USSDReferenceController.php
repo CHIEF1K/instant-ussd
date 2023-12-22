@@ -15,7 +15,7 @@ class USSDReferenceController extends Controller
 {
     public function handleReferenceRequest(Request $request, $merchant_id)
     {
-        $mobile = $request->Mobile;
+         $mobile = $request->Mobile;
         $session_id = $request->SessionId;
         $service_code = $request->ServiceCode;
         $type = $request->Type;
