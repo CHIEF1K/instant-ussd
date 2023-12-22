@@ -6,8 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
-
 
 
 
@@ -15,7 +13,6 @@ class USSDController extends Controller
 {
     public function handleUSSDRequest(Request $request,$merchant_id)
     {
-        //return response()->json(['message' => 'Handling USSD request for merchant_id: ' . $merchant_id]);
 
         $mobile = $request->Mobile;
         $session_id = $request->SessionId;
@@ -26,13 +23,7 @@ class USSDController extends Controller
 
         $response = array();
 
-        $apiResponseData = $this->sendPostRequest($mobile);
-
-        $firstName = $apiResponseData['response']['firstname'] ?? ''; // Default to an empty string if not present
-
-        Log::info("Extracted firstName: $firstName");
-
-
+        //$merchant = DB::table('merchants')->where('ussd_code', $service_code)->first();
 
         // Querying merchant using both ussd_code and merchant_id
         $merchant = DB::table('merchants')
@@ -72,7 +63,7 @@ class USSDController extends Controller
                     $json_data = array(
                         "app_id" => $app_id,
                         "app_key" => $app_key,
-                        "name" => $firstName,
+                        "name" => $merchant_id,
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
@@ -170,39 +161,5 @@ class USSDController extends Controller
         }
 
         return response()->json($response);
-    }
-
-    private function sendPostRequest($mobile)
-    {
-        // Build the URL for the POST request with the number appended
-        $url = "https://emergentghanadev.com/api/name-validation/live/$mobile";
-    
-        try {
-            // Make an HTTP POST request to the URL
-            $response = Http::post($url);
-    
-            // Log the response
-            Log::info("API Response: " . $response->body());
-    
-            // Decode the JSON response and store it in an array
-            $apiResponse = $response->json();
-    
-            // You can access the values like this
-            $statusCode = $apiResponse['status_code'];
-            $statusMessage = $apiResponse['status_message'];
-            $firstName = $apiResponse['firstname'];
-            $surname = $apiResponse['surname'];
-            $valid = $apiResponse['valid'];
-    
-            // Save the response in an array along with the phone number
-            $responseData = ['phone_number' => $mobile, 'response' => $apiResponse];
-    
-            return $responseData;
-        } catch (\Exception $e) {
-            // Handle exceptions (e.g., connection issues)
-            Log::error("HTTP Request Error: " . $e->getMessage());
-            // You may want to return or log an error response here
-            return ['phone_number' => $mobile, 'error' => $e->getMessage()];
-        }
     }
 }
