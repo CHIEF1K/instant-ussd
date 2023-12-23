@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+use Illuminate\Support\Facades\Http;
 
 
 class Peer2PeerController extends Controller
@@ -15,6 +15,11 @@ class Peer2PeerController extends Controller
     public function handleP2PRequest(Request $request, $merchant_id) 
     {
          $mobile = $request->Mobile;
+    
+     {
+        //return response()->json(['message' => 'Handling USSD request for merchant_id: ' . $merchant_id]);
+
+        $mobile = $request->Mobile;
         $session_id = $request->SessionId;
         $service_code = $request->ServiceCode;
         $type = $request->Type;
@@ -23,7 +28,7 @@ class Peer2PeerController extends Controller
 
         $response = array();
 
-        $number = $request->input('Mobile');
+        $apiResponseData = $this->sendPostRequest($mobile);
 
         $apiResponseData = $this->sendPostRequest($mobile);
 
@@ -200,6 +205,7 @@ class Peer2PeerController extends Controller
                 if ($merchant) {
                     $app_id = $merchant->app_id;
                     $app_key = $merchant->app_key;
+                  //  $merchants_name = $merchant->merchants_name;
                     $merchant_id = $merchant->merchant_id;
                     $order_id = Str::random(12);
                 
@@ -212,7 +218,7 @@ class Peer2PeerController extends Controller
                         "FeeTypeCode" => "GENERALPAYMENT",
                         "mobile" => $mobile,
                         "currency" => "GHS",
-                        "amount" => $paymentAmount,
+                        "amount" => $amount,
                         "mobile_network" => strtoupper($operator),
                         "order_id" => $order_id,
                         "order_desc" => "Payment",
@@ -220,9 +226,9 @@ class Peer2PeerController extends Controller
                     );
             
                     $post_data = json_encode($json_data, JSON_UNESCAPED_SLASHES);
-            
+
                     $curl = curl_init();
-            
+
                     curl_setopt_array($curl, array(
                         CURLOPT_URL => "https://api.interpayafrica.com/v3/interapi.svc/CreateMMPayment",
                         CURLOPT_RETURNTRANSFER => true,
@@ -236,10 +242,10 @@ class Peer2PeerController extends Controller
                             "Content-Type: application/json",
                         ),
                     ));
-            
+
                     $response_message = curl_exec($curl);
                     $err = curl_error($curl);
-            
+
                     curl_close($curl);
             
                     if ($err) {
@@ -247,33 +253,36 @@ class Peer2PeerController extends Controller
                     } else {
                         $return = json_decode($response_message);
                         $params = json_decode($response_message, true);
-            
+
+
                         if ($paymentTransaction = DB::table('payment_transactions')->where('order_id', $order_id)->first()) {
                             $transaction_id = $paymentTransaction->id;
-            
+
+
                             DB::table('payment_transactions')
-                                ->where('id', $transaction_id)
-                                ->update(array(
-                                    'status_code' => $return->status_code,
-                                    'amount' => $paymentAmount,
-                                    'status_message' => $return->status_message,
-                                    'merchantcode' => $return->merchantcode,
-                                    'transaction_no' => $return->transaction_no,
-                                    'resource_id' => $mobile,
-                                    'transaction_type' => 'payment',
-                                    'order_id' => $order_id,
-                                    'merchant_name' => $merchant_id,
-                                    'client_timestamp' => DB::raw('CURRENT_TIMESTAMP'),
-                                ));
+                            ->where('id', $transaction_id)
+                            ->update([
+                                'status_code' => $return->status_code,
+                                'amount' => $amount,
+                                'status_message' => $return->status_message,
+                                'merchantcode' => $return->merchantcode,
+                                'transaction_no' => $return->transaction_no,
+                                'resource_id' => $mobile,
+                                'transaction_type' => 'payment',
+                                'order_id' => $order_id,
+                                'merchant_name'=> $merchant_id,
+                                'client_timestamp' => DB::raw('CURRENT_TIMESTAMP'),
+                            ]);
+
                         } else {
                             $sql = "INSERT INTO payment_transactions 
                                     (status_code, amount, status_message, merchantcode, transaction_no, resource_id, transaction_type, order_id, merchants_name, client_timestamp) 
                                     VALUES 
                                     (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
-            
-                            DB::insert($sql, array(
+
+                            DB::insert($sql, [
                                 $return->status_code,
-                                $paymentAmount,
+                                $amount,
                                 $return->status_message,
                                 $return->merchantcode,
                                 $return->transaction_no,
@@ -281,20 +290,11 @@ class Peer2PeerController extends Controller
                                 'payment',
                                 $order_id,
                                 $merchant_id,
-                            ));
+                            ]);
                         }
             
                         if ($return->status_code == 1) {
                             $response_message = "You will receive a payment prompt to complete your payment";
-
-                            $number = $request->input('Mobile');
-            
-                        // Update the user's previous step to 'welcome_enter_amount'
-                        DB::table('mother_merchants.users')
-                            ->where('phone_number', $number)
-                            ->update(['previous_step' => 'welcome', 'date_updated' => now()]);
-
-
                         } else {
                             $response_message = "E3. Please Try Again Later.";
 
@@ -305,6 +305,7 @@ class Peer2PeerController extends Controller
 
                         }
                     }
+
                     $response = [
                         "Type" => "Release",
                         "Message" => $response_message
@@ -351,6 +352,7 @@ class Peer2PeerController extends Controller
             }
         }
 
+        return response()->json($response);
     }
             
             
