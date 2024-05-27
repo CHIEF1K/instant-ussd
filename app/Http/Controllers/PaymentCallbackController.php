@@ -61,18 +61,23 @@ class PaymentCallbackController extends Controller
         ]);
 
         // Get the merchant's details (phone number and name)
-        $merchant = DB::table('merchants')->where('merchant_id', $merchant_id)->first();
+        $merchant = DB::table('merchants')->where('merchant_id', $merchant_id) ->first();
         if ($merchant) {
             $merchant_phone_number = $merchant->phone_number;
             $merchant_name = $merchant->merchants_name;  
 
 
             // Send SMS to the merchant
-            $successMessageToMerchant = "Payment of " . $amount . " GHS made by " . $mobile . " was successful. \n" . "Powered by Emergent. ";
+            $successMessageToMerchant = "Payment of " . $amount . " GHS made by " . $mobile . " was successful. \n" . "Powered by Emergent  ";
             $this->sendSMS($merchant_phone_number, $successMessageToMerchant);
+
+            // Send SMS to the user (payer) confirming the payment
+             $successMessageToUser = "Hello! You have successfully paid GHS " . $amount . " to " . $merchant_name . ".\n\nPowered by Emergent Payments. Contact us on 0302263014.";
+             $this->sendSMS($mobile, $successMessageToUser); 
 
         }
     }
+
 
     private function sendSMS($destination, $message)
     {
