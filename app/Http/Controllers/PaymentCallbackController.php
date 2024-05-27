@@ -68,7 +68,7 @@ class PaymentCallbackController extends Controller
 
 
             // Send SMS to the merchant
-            $successMessageToMerchant = "Payment of " . $amount . " GHS made by " . $mobile . " was successful. \n" . "Powered by Emergent  ";
+            $successMessageToMerchant = "Payment of " . $amount . " GHS made by " . $mobile . " was successful. \n" . "Powered by Emergent. ";
             $this->sendSMS($merchant_phone_number, $successMessageToMerchant);
 
         }
