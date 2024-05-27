@@ -71,10 +71,6 @@ class PaymentCallbackController extends Controller
             $successMessageToMerchant = "Payment of " . $amount . " GHS made by " . $mobile . " was successful. \n" . "Powered by Emergent  ";
             $this->sendSMS($merchant_phone_number, $successMessageToMerchant);
 
-            // Send SMS to the user (payer) confirming the payment
-         /*  $successMessageToUser = "Hello! You have successfully paid GHS " . $amount . " to " . $merchant_name . ".\n\nPowered by Emergent Payments. Contact us on 0302263014.";
-           $this->sendSMS($mobile, $successMessageToUser); */
-
         }
     }
 
